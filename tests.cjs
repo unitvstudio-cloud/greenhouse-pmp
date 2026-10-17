@@ -1,6 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const nodes={};let saved={},downloads=[];
 const ctx={console,Date,Math,JSON,Number,String,Array,Object,Blob,setTimeout,clearTimeout,alert:()=>{},confirm:()=>true,prompt:()=>null,navigator:{},localStorage:{getItem:k=>saved[k]||null,setItem:(k,v)=>saved[k]=v},document:{getElementById:id=>nodes[id]||(nodes[id]={innerHTML:'',value:''})}};
+Object.defineProperty(ctx,'top',{value:ctx,writable:false,configurable:false});
 vm.createContext(ctx);vm.runInContext(fs.readFileSync('index.html','utf8').split('<script>')[1].split('</script>')[0],ctx);
 function run(code){return vm.runInContext(code,ctx)}
 run(`download=(name,blob)=>{}`);
