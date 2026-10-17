@@ -1,2 +1,21 @@
-# greenhouse-pmp
-Greenhouse PMP V3.1 — single-file offline crop project planning and sponsor collaboration
+# Greenhouse PMP V3.1
+
+온실 작기 시작 전 계획부터 승인·실행 점검까지 관리하는 단일 HTML 무설치 앱입니다.
+
+- [웹 실행](https://unitvstudio-cloud.github.io/greenhouse-pmp/)
+- [HTML 원본](index.html): 다운로드 후 Chrome/Edge에서 열면 오프라인으로 사용합니다.
+- [사용 안내](USAGE.md)
+
+토마토·달래·기타 작물, 헌장·가이드·거버넌스·범위·일정·재무·이해관계자·자원·리스크·규칙 기반 AI PM 기능을 유지합니다.
+
+V3.1은 보고 주기·채널, 의사결정 권한 경계, 간섭 사건과 원인·대응, 주간 회의·에스컬레이션, 반복적 피드백, 마이크로매니징 위험 평가를 추가합니다. 한국 시간 기준 날짜 계산도 수정했습니다.
+
+## 데이터
+
+기존 V3.0에서 JSON 백업 후 V3.1에서 복원하세요. 데이터는 사용자의 브라우저에 저장되고 GitHub로 전송되지 않습니다. 실제 사건·작기 데이터와 백업 파일은 이 공개 저장소에 올리지 마세요. 생육·환경·양액·ERP 연결은 포함하지 않습니다.
+
+## 확인
+
+`node tests.cjs` — 14개 자동 점검. JavaScript 구문 검사 통과. 브라우저 실제 조작 검증 상태는 배포 후 별도 확인합니다.
+
+권한 합의와 승인은 로컬 기록이며 인증된 전자서명이 아닙니다. 기본 계획과 위험 척도는 자체 실무 제안입니다.
