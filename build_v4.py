@@ -52,8 +52,9 @@ base=(ROOT/'legacy/index-v3.1.html').read_text(encoding='utf-8')
 base=base.replace("const KEY='greenhouse-pmp-v3-data'","const KEY='greenhouse-pmp-v4-data'")
 base=base.replace('JSON.parse(localStorage.getItem(KEY))',"JSON.parse(localStorage.getItem(KEY)||localStorage.getItem('greenhouse-pmp-v3-data'))")
 base=base.replace('V3.1','V4.0')
+base=base.replace('</style>', '.df{margin:12px 0}.df .value{white-space:pre-wrap;overflow-wrap:anywhere;min-height:60px;border:1px solid #c8d8d0;border-radius:8px;padding:10px;background:#fafcfb}\n</style>',1)
 base=base.replace("if(!confirm('기존 모든 프로젝트", "v.projects.forEach(docValidateProject);if(!confirm('기존 모든 프로젝트")
-extension='\nconst DOC_TEMPLATES='+json.dumps(templates,ensure_ascii=False)+';\n'+(ROOT/'documents.js').read_text(encoding='utf-8')
+extension='\nconst DOC_TEMPLATES='+json.dumps(templates,ensure_ascii=False)+';\n'+(ROOT/'documents.js').read_text(encoding='utf-8')+'\n'+(ROOT/'document-hub.js').read_text(encoding='utf-8')
 pos=base.rfind('render();')
 assert pos>0
 base=base[:pos]+extension+'\n'+base[pos:]
