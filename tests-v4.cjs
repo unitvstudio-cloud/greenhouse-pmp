@@ -1,0 +1,23 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const code=fs.readFileSync('index.html','utf8').split('<script>')[1].split('</script>')[0];
+let saved={},fail=false;
+function boot(){const nodes={};const c={console,Date,Math,JSON,Number,String,Array,Object,Blob,setTimeout,clearTimeout,alert:()=>{},confirm:()=>true,prompt:()=>null,navigator:{},localStorage:{getItem:k=>saved[k]||null,setItem:(k,v)=>{if(fail)throw Error('quota');saved[k]=v}},document:{getElementById:id=>nodes[id]||(nodes[id]={innerHTML:'',value:''})}};vm.createContext(c);vm.runInContext(code,c);return c}
+let c=boot(),count=0;const run=s=>vm.runInContext(s,c);function test(name,f){f();count++;console.log('PASS '+name)}
+test('32 distinct complete templates',()=>assert(run(`DOC_TEMPLATES.length===32&&new Set(DOC_TEMPLATES.map(t=>t.id)).size===32&&DOC_TEMPLATES.every(t=>t.fields.length===5&&t.guide.length===3&&t.checklist.length===4)`)));
+const old=run('JSON.stringify(state)');saved={'greenhouse-pmp-v3-data':old};c=boot();
+test('v3 fallback preserves source and saves separately',()=>{run(`docCreate('PMP-01')`);assert.equal(saved['greenhouse-pmp-v3-data'],old);assert(saved['greenhouse-pmp-v4-data']);assert.equal(run('p().tasks.length'),5)});
+test('batch creates only missing types',()=>{run('docBatch();docBatch()');assert.equal(run('p().documents.length'),32)});
+test('incomplete document cannot enter review',()=>assert.throws(()=>run(`docTransition('검토 요청','PM','검토 요청')`)));
+run(`docCreate('PMP-12','blank');docSave({f0:'범위',f1:'제외',f2:'검수',f3:'가정',f4:'통제'},'작성자','최초 작성',[true,true,true,true])`);
+test('review prevents editing and author self-review',()=>{run(`docTransition('검토 요청','작성자','내용 확인 요청')`);assert.throws(()=>run(`docSave({},'작성자','',[true,true,true,true])`));assert.throws(()=>run(`docTransition('검토 완료','작성자','자체 확인')`))});
+test('reject requires reason; corrected document resubmits',()=>{assert.throws(()=>run(`docTransition('반려','검토자','')`));run(`docTransition('반려','검토자','근거 추가');docSave(docCurrent().values,'작성자','근거 보완',[true,true,true,true]);docTransition('검토 요청','작성자','재검토')`);assert.equal(run('docCurrent().status'),'검토 중')});
+test('approval requires review and independent approver',()=>{assert.throws(()=>run(`docTransition('승인','승인자','승인')`));run(`docTransition('검토 완료','검토자','확인')`);assert.throws(()=>run(`docTransition('승인','작성자','승인')`));run(`docTransition('승인','승인자','승인')`);assert.equal(run('docCurrent().status'),'승인')});
+test('approved version locked, revision preserves snapshot',()=>{assert.throws(()=>run(`docSave({},'작성자','변조',[])`));run(`docTransition('새 개정','PM','범위 확대');docSave({...docCurrent().values,f0:'확대 범위'},'작성자','확대',[true,true,true,true])`);assert.equal(run('docCurrent().revision'),2);assert.equal(run('docCurrent().approver'),null);assert.equal(run(`docCurrent().history.find(h=>h.action==='승인').snapshot.values.f0`),'범위')});
+test('example cannot become approved real record',()=>{run(`docCreate('PMP-01','example');docSave(docCurrent().values,'작성자','검토',[true,true,true,true])`);assert.throws(()=>run(`docTransition('검토 요청','PM','확인')`))});
+test('HTML escaping across print and history',()=>{run(`docCreate('PMP-01','blank');docSave({f0:'<script>alert(1)</script>',f1:'x',f2:'x',f3:'x',f4:'x'},'<img src=x>','<svg onload=x>',[true,true,true,true])`);const h=run('docPrintHTML(docCurrent())');assert(!h.includes('<script>alert'));assert(h.includes('&lt;script&gt;'));assert(!run('documentsPage()').includes('<svg onload=x>'))});
+test('JSON persistence and reload include history',()=>{const n=run('p().documents.length');c=boot();assert.equal(run('p().documents.length'),n);assert(run('p().documents.at(-1).history.length')>=2)});
+test('quota failure rolls state back',()=>{const before=run('JSON.stringify(state)');fail=true;assert.throws(()=>run(`docCreate('PMP-32')`));fail=false;assert.equal(run('JSON.stringify(state)'),before)});
+test('project copy clears documents without affecting original',()=>{const n=run('p().documents.length');run('duplicate()');assert.equal(run('p().documents.length'),0);assert.equal(run('state.projects[0].documents.length'),n)});
+test('all blank and example pages present in handbook',()=>{const h=run('docHandbook()');assert.equal((h.match(/class="sheet"/g)||[]).length,64);for(let n=1;n<=32;n++)assert(h.includes('PMP-'+String(n).padStart(2,'0')))});
+test('malformed imports rejected and valid backup accepted',()=>{run('state.projects.forEach(docValidateProject)');assert.throws(()=>run(`docValidateProject({documents:[{id:'bad',templateId:'PMP-01',revision:'<img>'}]})`));run('docValidateProject(blank())')});
+console.log(count+' v4 tests passed');
