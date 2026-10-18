@@ -1,0 +1,17 @@
+name: PMP regression tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python build_v4.py
+      - run: git diff --exit-code -- index.html templates.json
+      - run: node tests.cjs
+      - run: node tests-v4.cjs
